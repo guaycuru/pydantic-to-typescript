@@ -23,8 +23,7 @@ inputs:
       be omitted from the resulting typescript definitions.
   fail-on-mismatch:
     required: false
-    type: boolean
-    default: true
+    default: "true"
     description: >
       Boolean flag indicating if type definition mismatches should cause this action to fail.
   GITHUB_TOKEN:
