@@ -24,16 +24,16 @@ install_requires = [
 ]
 
 setup(
-    name="pydantic-to-typescript",
-    version="1.1.11",
-    description="Convert pydantic models to typescript interfaces",
+    name="pydantic-to-typescript2",
+    version="1.0.0",
+    description="Convert pydantic v1 and pydantic v2 models to typescript interfaces",
     license="MIT",
     long_description=readme(),
     long_description_content_type="text/markdown",
-    keywords="pydantic typescript annotations validation interface",
-    author="Phillip Dupuis",
-    author_email="phillip_dupuis@alumni.brown.edu",
-    url="https://github.com/phillipdupuis/pydantic-to-typescript",
+    keywords="pydantic pydantic2 typescript annotations validation interface",
+    author="Phillip Dupuis, Darius Labs",
+    author_email="sean@dariuslabs.com/",
+    url="https://github.com/dariuslabs/pydantic-to-typescript2",
     packages=find_packages(exclude=["tests*"]),
     install_requires=install_requires,
     extras_require={
