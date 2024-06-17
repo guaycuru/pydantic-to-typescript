@@ -23,10 +23,10 @@ jobs:
     steps:
       - name: Check out repo
         uses: actions/checkout@v3
-      - name: Set up Node.js 18
+      - name: Set up Node.js 20
         uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: 20
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
