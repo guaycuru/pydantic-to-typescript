@@ -1,8 +1,7 @@
-name: Pydantic to Typescript
+name: Pydantic to Typescript2
 description: |
-  Convert pydantic models into typescript definitions and ensure that your type definitions are in sync.
-author: Phillip Dupuis
-
+  Convert pydantic v1 and pydantic v2 models into typescript definitions and ensure that your type definitions are in sync.
+author: Phillip Dupuis, Darius Labs
 inputs:
   python-module:
     required: true
@@ -47,10 +46,10 @@ runs:
       uses: actions/setup-python@v4
       with:
         python-version: ">=3.6 <=3.10"
-    - name: Install pydantic-to-typescript
+    - name: Install pydantic-to-typescript2
       shell: bash
       run: |
-        python -m pip install -U pip wheel pydantic-to-typescript
+        python -m pip install -U pip wheel pydantic-to-typescript2
     - name: Set up Node.js 16
       uses: actions/setup-node@v3
       with:
