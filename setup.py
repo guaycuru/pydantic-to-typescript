@@ -32,7 +32,7 @@ setup(
     long_description_content_type="text/markdown",
     keywords="pydantic pydantic2 typescript annotations validation interface",
     author="Phillip Dupuis, Darius Labs",
-    author_email="sean@dariuslabs.com/",
+    author_email="sean@dariuslabs.com",
     url="https://github.com/dariuslabs/pydantic-to-typescript2",
     packages=find_packages(exclude=["tests*"]),
     install_requires=install_requires,
