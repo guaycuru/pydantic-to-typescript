@@ -87,6 +87,7 @@ def test_computed_fields(tmpdir):
         pytest.skip("Computed fields are a pydantic v2 feature")
     run_test(tmpdir, "computed_fields")
 
+
 def test_extra_fields(tmpdir):
     run_test(tmpdir, "extra_fields")
 
