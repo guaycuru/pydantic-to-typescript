@@ -13,7 +13,7 @@ from types import ModuleType
 from typing import Any, Dict, List, Tuple, Type
 from uuid import uuid4
 
-from pydantic import VERSION, BaseModel, Extra, create_model
+from pydantic import VERSION, BaseModel, create_model
 
 V2 = True if VERSION.startswith("2") else False
 
@@ -166,13 +166,13 @@ def generate_json_schema_v1(models: List[Type[BaseModel]]) -> str:
 
     try:
         for m in models:
-            if m.model_config.get("extra", None) != Extra.allow:
-                m.model_config["extra"] = Extra.forbid
+            if m.model_config.get("extra", None) != "allow":
+                m.model_config["extra"] = "forbid"
 
         master_model = create_model(
             "_Master_", **{m.__name__: (m, ...) for m in models}, __base__=m
         )
-        master_model.model_config["extra"] = Extra.forbid
+        master_model.model_config["extra"] = "forbid"
         master_model.model_config["schema_extra"] = staticmethod(clean_schema)
 
         schema = json.loads(master_model.schema_json())
