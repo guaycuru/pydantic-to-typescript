@@ -21,6 +21,7 @@ export interface Dog {
   age: number;
   breed: DogBreed;
 }
+
 export const enum CatBreed {
   domestic_shorthair = "domestic shorthair",
   bengal = "bengal",
