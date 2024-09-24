@@ -29,7 +29,7 @@ def run_test(
     tmpdir, test_name, *, module_path=None, call_from_python=False, exclude=()
 ):
     """
-    Execute pydantic2ts logic for converting pydantic models into tyepscript definitions.
+    Execute pydantic2ts logic for converting pydantic models into typescript definitions.
     Compare the output with the expected output, verifying it is identical.
     """
     module_path = module_path or get_input_module(test_name)

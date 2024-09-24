@@ -6,11 +6,14 @@ import logging
 import os
 import shutil
 import sys
+from enum import Enum
 from importlib.util import module_from_spec, spec_from_file_location
+from inspect import isclass
 from pathlib import Path
 from tempfile import mkdtemp
 from types import ModuleType
 from typing import Any, Dict, List, Tuple, Type
+from typing_extensions import get_args, get_origin
 from uuid import uuid4
 
 from pydantic import VERSION, BaseModel, create_model
@@ -151,6 +154,39 @@ def clean_schema(schema: Dict[str, Any]) -> None:
         del schema["description"]
 
 
+def extend_enum_definitions(
+    schema: Dict[str, Any], models: List[Type[BaseModel]]
+) -> None:
+    """
+    Extend the 'enum' property of a schema with the tsEnumNames property
+    for any Enum fields in the models so that the generated TypeScript
+    definitions will include enums instead of plain strings.
+    """
+    if ("enum" in schema) and (not "tsEnumNames" in schema):
+        for model in models:
+            for prop, prop_type in model.__annotations__.items():
+                if (
+                    isclass(prop_type)
+                    and issubclass(prop_type, Enum)
+                    and prop_type.__name__ == schema["title"]
+                ):
+                    schema["tsEnumNames"] = [
+                        name for name, member in prop_type.__members__.items()
+                    ]
+                    break
+                elif get_origin(prop_type) is list:
+                    inner_type = get_args(prop_type)[0]
+                    if (
+                        isclass(inner_type)
+                        and issubclass(inner_type, Enum)
+                        and inner_type.__name__ == schema["title"]
+                    ):
+                        schema["tsEnumNames"] = [
+                            name for name, member in inner_type.__members__.items()
+                        ]
+                        break
+
+
 def generate_json_schema_v1(models: List[Type[BaseModel]]) -> str:
     """
     Create a top-level '_Master_' model with references to each of the actual models.
@@ -179,6 +215,7 @@ def generate_json_schema_v1(models: List[Type[BaseModel]]) -> str:
 
         for d in schema.get("definitions", {}).values():
             clean_schema(d)
+            extend_enum_definitions(d, models)
 
         return json.dumps(schema, indent=2)
 
@@ -216,6 +253,7 @@ def generate_json_schema_v2(models: List[Type[BaseModel]]) -> str:
 
         for d in schema.get("$defs", {}).values():
             clean_schema(d)
+            extend_enum_definitions(d, models)
 
         return json.dumps(schema, indent=2)
 
