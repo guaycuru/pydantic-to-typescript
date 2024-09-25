@@ -11,12 +11,17 @@ from importlib.util import module_from_spec, spec_from_file_location
 from inspect import isclass
 from pathlib import Path
 from tempfile import mkdtemp
-from types import ModuleType, UnionType
+from types import ModuleType
 from typing import Any, Dict, List, Tuple, Type, Union
 from typing_extensions import get_args, get_origin
 from uuid import uuid4
 
 from pydantic import VERSION, BaseModel, create_model
+
+try:
+    from types import UnionType
+except ImportError:
+    UnionType = None
 
 V2 = True if VERSION.startswith("2") else False
 
@@ -186,7 +191,7 @@ def extend_enum_definitions(
                     if is_matching_enum(inner_type, schema["title"]):
                         add_ts_enum_names(schema, inner_type)
                         break
-                elif origin is UnionType or origin is Union:
+                elif (UnionType and origin is UnionType) or origin is Union:
                     for inner_type in get_args(prop_type):
                         if is_matching_enum(inner_type, schema["title"]):
                             add_ts_enum_names(schema, inner_type)
