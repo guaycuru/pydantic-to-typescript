@@ -12,7 +12,7 @@ from inspect import isclass
 from pathlib import Path
 from tempfile import mkdtemp
 from types import ModuleType
-from typing import Any, Dict, List, Tuple, Type
+from typing import Any, Dict, List, Tuple, Type, Union
 from typing_extensions import get_args, get_origin
 from uuid import uuid4
 
@@ -154,6 +154,13 @@ def clean_schema(schema: Dict[str, Any]) -> None:
         del schema["description"]
 
 
+def add_ts_enum_names(schema: Dict[str, Any], enum_class: Type[Enum]) -> None:
+    schema["tsEnumNames"] = [name for name, member in enum_class.__members__.items()]
+
+def is_matching_enum(prop_type: Any, schema_title: str) -> bool:
+    return isclass(prop_type) and issubclass(prop_type, Enum) and prop_type.__name__ == schema_title
+
+
 def extend_enum_definitions(
     schema: Dict[str, Any], models: List[Type[BaseModel]]
 ) -> None:
@@ -165,26 +172,19 @@ def extend_enum_definitions(
     if ("enum" in schema) and (not "tsEnumNames" in schema):
         for model in models:
             for prop, prop_type in model.__annotations__.items():
-                if (
-                    isclass(prop_type)
-                    and issubclass(prop_type, Enum)
-                    and prop_type.__name__ == schema["title"]
-                ):
-                    schema["tsEnumNames"] = [
-                        name for name, member in prop_type.__members__.items()
-                    ]
+                if is_matching_enum(prop_type, schema["title"]):
+                    add_ts_enum_names(schema, prop_type)
                     break
                 elif get_origin(prop_type) is list:
                     inner_type = get_args(prop_type)[0]
-                    if (
-                        isclass(inner_type)
-                        and issubclass(inner_type, Enum)
-                        and inner_type.__name__ == schema["title"]
-                    ):
-                        schema["tsEnumNames"] = [
-                            name for name, member in inner_type.__members__.items()
-                        ]
+                    if is_matching_enum(inner_type, schema["title"]):
+                        add_ts_enum_names(schema, inner_type)
                         break
+                elif get_origin(prop_type) is Union:
+                    for inner_type in get_args(prop_type):
+                        if is_matching_enum(inner_type, schema["title"]):
+                            add_ts_enum_names(schema, inner_type)
+                            break
 
 
 def generate_json_schema_v1(models: List[Type[BaseModel]]) -> str:

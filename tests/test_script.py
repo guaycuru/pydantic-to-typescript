@@ -92,6 +92,10 @@ def test_extra_fields(tmpdir):
     run_test(tmpdir, "extra_fields")
 
 
+def test_enums(tmpdir):
+    run_test(tmpdir, "enums")
+
+
 def test_relative_filepath(tmpdir):
     test_name = "single_module"
     relative_path = os.path.join(
