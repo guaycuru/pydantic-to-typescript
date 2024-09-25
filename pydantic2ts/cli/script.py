@@ -11,7 +11,7 @@ from importlib.util import module_from_spec, spec_from_file_location
 from inspect import isclass
 from pathlib import Path
 from tempfile import mkdtemp
-from types import ModuleType
+from types import ModuleType, UnionType
 from typing import Any, Dict, List, Tuple, Type, Union
 from typing_extensions import get_args, get_origin
 from uuid import uuid4
@@ -177,15 +177,16 @@ def extend_enum_definitions(
     if ("enum" in schema) and (not "tsEnumNames" in schema):
         for model in models:
             for prop, prop_type in model.__annotations__.items():
+                origin = get_origin(prop_type)
                 if is_matching_enum(prop_type, schema["title"]):
                     add_ts_enum_names(schema, prop_type)
                     break
-                elif get_origin(prop_type) is list:
+                elif origin is list:
                     inner_type = get_args(prop_type)[0]
                     if is_matching_enum(inner_type, schema["title"]):
                         add_ts_enum_names(schema, inner_type)
                         break
-                elif get_origin(prop_type) is Union:
+                elif origin is UnionType or origin is Union:
                     for inner_type in get_args(prop_type):
                         if is_matching_enum(inner_type, schema["title"]):
                             add_ts_enum_names(schema, inner_type)
