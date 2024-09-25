@@ -157,8 +157,13 @@ def clean_schema(schema: Dict[str, Any]) -> None:
 def add_ts_enum_names(schema: Dict[str, Any], enum_class: Type[Enum]) -> None:
     schema["tsEnumNames"] = [name for name, member in enum_class.__members__.items()]
 
+
 def is_matching_enum(prop_type: Any, schema_title: str) -> bool:
-    return isclass(prop_type) and issubclass(prop_type, Enum) and prop_type.__name__ == schema_title
+    return (
+        isclass(prop_type)
+        and issubclass(prop_type, Enum)
+        and prop_type.__name__ == schema_title
+    )
 
 
 def extend_enum_definitions(
