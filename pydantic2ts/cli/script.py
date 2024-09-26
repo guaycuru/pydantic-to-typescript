@@ -196,9 +196,10 @@ def clean_schema(schema: Dict[str, Any]) -> None:
 def add_enum_names_v1(model: Type[Enum]) -> None:
     @classmethod
     def __modify_schema__(cls, field_schema: Dict[str, Any]):
-        field_schema.update(tsEnumNames=list(model.__members__.keys()))
-        for name, value in zip(field_schema["tsEnumNames"], field_schema["enum"]):
-            assert cls[name].value == value
+        if len(model.__members__.keys()) == len(field_schema["enum"]):
+            field_schema.update(tsEnumNames=list(model.__members__.keys()))
+            for name, value in zip(field_schema["tsEnumNames"], field_schema["enum"]):
+                assert cls[name].value == value
 
     setattr(model, "__modify_schema__", __modify_schema__)
 
@@ -223,7 +224,8 @@ if V2:
             result = super().enum_schema(schema)
 
             # Add tsEnumNames property
-            result["tsEnumNames"] = [v.name for v in schema["members"]]
+            if len(schema["members"]) > 0:
+                result["tsEnumNames"] = [v.name for v in schema["members"]]
 
             return result
 
