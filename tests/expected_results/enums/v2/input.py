@@ -2,6 +2,9 @@ from typing import List, Optional
 
 from pydantic import BaseModel
 
+from .schemas.schema_one import ModelOne  # noqa: F401
+from .schemas.schema_two import ModelTwo  # noqa: F401
+
 
 class Cat(BaseModel):
     name: str

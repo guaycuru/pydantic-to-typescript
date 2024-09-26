@@ -21,3 +21,18 @@ export interface Dog {
   name: string;
   age: number;
 }
+export interface ModelOne {
+  foo: Foo;
+}
+export interface ModelTwo {
+  foo: Foo1;
+}
+
+export const enum Foo {
+  ONE_A = "one_a",
+  ONE_B = "one_b"
+}
+export const enum Foo1 {
+  TWO_A = "two_a",
+  TWO_B = "two_b"
+}

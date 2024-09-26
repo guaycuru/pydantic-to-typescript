@@ -163,11 +163,15 @@ def add_ts_enum_names(schema: Dict[str, Any], enum_class: Type[Enum]) -> None:
     schema["tsEnumNames"] = [name for name, member in enum_class.__members__.items()]
 
 
-def is_matching_enum(prop_type: Any, schema_title: str) -> bool:
+def is_matching_enum(prop_type: Any, schema_title: str, schema_enum: list[str]) -> bool:
     return (
         isclass(prop_type)
         and issubclass(prop_type, Enum)
         and prop_type.__name__ == schema_title
+        and all(
+            value in (member.value for member in prop_type.__members__.values())
+            for value in schema_enum
+        )
     )
 
 
@@ -183,17 +187,19 @@ def extend_enum_definitions(
         for model in models:
             for prop, prop_type in model.__annotations__.items():
                 origin = get_origin(prop_type)
-                if is_matching_enum(prop_type, schema["title"]):
+                if is_matching_enum(prop_type, schema["title"], schema["enum"]):
                     add_ts_enum_names(schema, prop_type)
                     break
                 elif origin is list:
                     inner_type = get_args(prop_type)[0]
-                    if is_matching_enum(inner_type, schema["title"]):
+                    if is_matching_enum(inner_type, schema["title"], schema["enum"]):
                         add_ts_enum_names(schema, inner_type)
                         break
                 elif (UnionType and origin is UnionType) or origin is Union:
                     for inner_type in get_args(prop_type):
-                        if is_matching_enum(inner_type, schema["title"]):
+                        if is_matching_enum(
+                            inner_type, schema["title"], schema["enum"]
+                        ):
                             add_ts_enum_names(schema, inner_type)
                             break
 
