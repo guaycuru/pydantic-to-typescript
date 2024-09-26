@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import List, Optional
 
 from pydantic import BaseModel
@@ -23,3 +24,8 @@ class AnimalShelter(BaseModel):
     dogs: List[Dog]
     owner: Optional[Dog]
     master: Cat
+
+
+class Standalone(Enum):
+    something = "something"
+    anything = "anything"

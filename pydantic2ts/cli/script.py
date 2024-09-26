@@ -254,9 +254,8 @@ def generate_json_schema_v1(
         for e in enums:
             add_enum_names_v1(e)
 
-        all_models = models + enums
         master_model = create_model(
-            "_Master_", **{m.__name__: (m, ...) for m in all_models}
+            "_Master_", **{m.__name__: (m, ...) for m in models}
         )
         master_model.Config.extra = "forbid"
         master_model.Config.schema_extra = staticmethod(clean_schema)

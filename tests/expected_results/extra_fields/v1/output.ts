@@ -12,9 +12,3 @@ export interface ModelAllow {
 export interface ModelDefault {
   a: string;
 }
-
-export const enum Extra {
-  allow = "allow",
-  ignore = "ignore",
-  forbid = "forbid"
-}
