@@ -9,7 +9,7 @@ export interface AnimalShelter {
   address: string;
   cats: Cat[];
   dogs: Dog[];
-  owner: Dog | null;
+  owner?: Dog;
   master: Cat;
 }
 export interface Cat {
