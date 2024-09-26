@@ -14,8 +14,6 @@ from tempfile import mkdtemp
 from types import ModuleType
 from typing import Any, Dict, List, Tuple, Type
 
-from pydantic.json_schema import GenerateJsonSchema, JsonSchemaValue
-from pydantic_core import core_schema
 from uuid import uuid4
 
 from pydantic import VERSION, BaseModel, create_model
@@ -32,6 +30,15 @@ if not V2:
         from pydantic.generics import GenericModel
     except ImportError:
         GenericModel = None
+
+if V2:
+    try:
+        from pydantic.json_schema import GenerateJsonSchema, JsonSchemaValue
+        from pydantic_core import core_schema
+    except ImportError:
+        GenerateJsonSchema = None
+        JsonSchemaValue = None
+        pydantic_core = None
 
 logger = logging.getLogger("pydantic2ts")
 
@@ -208,15 +215,17 @@ def is_matching_enum(prop_type: Any, schema_title: str, schema_enum: list[str]) 
     )
 
 
-class CustomGenerateJsonSchema(GenerateJsonSchema):
-    def enum_schema(self, schema: core_schema.EnumSchema) -> JsonSchemaValue:
-        # Call the original method
-        result = super().enum_schema(schema)
+if V2:
 
-        # Add tsEnumNames property
-        result["tsEnumNames"] = [v.name for v in schema["members"]]
+    class CustomGenerateJsonSchema(GenerateJsonSchema):
+        def enum_schema(self, schema: core_schema.EnumSchema) -> JsonSchemaValue:
+            # Call the original method
+            result = super().enum_schema(schema)
 
-        return result
+            # Add tsEnumNames property
+            result["tsEnumNames"] = [v.name for v in schema["members"]]
+
+            return result
 
 
 def generate_json_schema_v1(
