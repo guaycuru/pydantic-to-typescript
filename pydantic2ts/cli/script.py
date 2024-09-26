@@ -12,8 +12,10 @@ from inspect import isclass
 from pathlib import Path
 from tempfile import mkdtemp
 from types import ModuleType
-from typing import Any, Dict, List, Tuple, Type, Union
-from typing_extensions import get_args, get_origin
+from typing import Any, Dict, List, Tuple, Type
+
+from pydantic.json_schema import GenerateJsonSchema, JsonSchemaValue
+from pydantic_core import core_schema
 from uuid import uuid4
 
 from pydantic import VERSION, BaseModel, create_model
@@ -89,6 +91,13 @@ def is_concrete_pydantic_model(obj) -> bool:
         return issubclass(obj, BaseModel)
 
 
+def is_enum(obj) -> bool:
+    """
+    Return true if an object is an Enum.
+    """
+    return inspect.isclass(obj) and issubclass(obj, Enum)
+
+
 def extract_pydantic_models(module: ModuleType) -> List[Type[BaseModel]]:
     """
     Given a module, return a list of the pydantic models contained within it.
@@ -105,6 +114,24 @@ def extract_pydantic_models(module: ModuleType) -> List[Type[BaseModel]]:
         models.extend(extract_pydantic_models(submodule))
 
     return models
+
+
+def extract_enum_models(module: ModuleType) -> List[Type[Enum]]:
+    """
+    Given a module, return a list of the Enum classes contained within it.
+    """
+    enums = []
+    module_name = module.__name__
+
+    for _, enum in inspect.getmembers(module, is_enum):
+        enums.append(enum)
+
+    for _, submodule in inspect.getmembers(
+        module, lambda obj: is_submodule(obj, module_name)
+    ):
+        enums.extend(extract_enum_models(submodule))
+
+    return enums
 
 
 def clean_output_file(output_filename: str) -> None:
@@ -159,8 +186,14 @@ def clean_schema(schema: Dict[str, Any]) -> None:
         del schema["description"]
 
 
-def add_ts_enum_names(schema: Dict[str, Any], enum_class: Type[Enum]) -> None:
-    schema["tsEnumNames"] = [name for name, member in enum_class.__members__.items()]
+def add_enum_names_v1(model: Type[Enum]) -> None:
+    @classmethod
+    def __modify_schema__(cls, field_schema: Dict[str, Any]):
+        field_schema.update(tsEnumNames=list(model.__members__.keys()))
+        for name, value in zip(field_schema["tsEnumNames"], field_schema["enum"]):
+            assert cls[name].value == value
+
+    setattr(model, "__modify_schema__", __modify_schema__)
 
 
 def is_matching_enum(prop_type: Any, schema_title: str, schema_enum: list[str]) -> bool:
@@ -175,36 +208,20 @@ def is_matching_enum(prop_type: Any, schema_title: str, schema_enum: list[str]) 
     )
 
 
-def extend_enum_definitions(
-    schema: Dict[str, Any], models: List[Type[BaseModel]]
-) -> None:
-    """
-    Extend the 'enum' property of a schema with the tsEnumNames property
-    for any Enum fields in the models so that the generated TypeScript
-    definitions will include enums instead of plain strings.
-    """
-    if ("enum" in schema) and (not "tsEnumNames" in schema):
-        for model in models:
-            for prop, prop_type in model.__annotations__.items():
-                origin = get_origin(prop_type)
-                if is_matching_enum(prop_type, schema["title"], schema["enum"]):
-                    add_ts_enum_names(schema, prop_type)
-                    break
-                elif origin is list:
-                    inner_type = get_args(prop_type)[0]
-                    if is_matching_enum(inner_type, schema["title"], schema["enum"]):
-                        add_ts_enum_names(schema, inner_type)
-                        break
-                elif (UnionType and origin is UnionType) or origin is Union:
-                    for inner_type in get_args(prop_type):
-                        if is_matching_enum(
-                            inner_type, schema["title"], schema["enum"]
-                        ):
-                            add_ts_enum_names(schema, inner_type)
-                            break
+class CustomGenerateJsonSchema(GenerateJsonSchema):
+    def enum_schema(self, schema: core_schema.EnumSchema) -> JsonSchemaValue:
+        # Call the original method
+        result = super().enum_schema(schema)
+
+        # Add tsEnumNames property
+        result["tsEnumNames"] = [v.name for v in schema["members"]]
+
+        return result
 
 
-def generate_json_schema_v1(models: List[Type[BaseModel]]) -> str:
+def generate_json_schema_v1(
+    models: List[Type[BaseModel]], enums: List[Type[Enum]]
+) -> str:
     """
     Create a top-level '_Master_' model with references to each of the actual models.
     Generate the schema for this model, which will include the schemas for all the
@@ -222,8 +239,12 @@ def generate_json_schema_v1(models: List[Type[BaseModel]]) -> str:
             if getattr(m.Config, "extra", None) != "allow":
                 m.Config.extra = "forbid"
 
+        for e in enums:
+            add_enum_names_v1(e)
+
+        all_models = models + enums
         master_model = create_model(
-            "_Master_", **{m.__name__: (m, ...) for m in models}
+            "_Master_", **{m.__name__: (m, ...) for m in all_models}
         )
         master_model.Config.extra = "forbid"
         master_model.Config.schema_extra = staticmethod(clean_schema)
@@ -232,7 +253,6 @@ def generate_json_schema_v1(models: List[Type[BaseModel]]) -> str:
 
         for d in schema.get("definitions", {}).values():
             clean_schema(d)
-            extend_enum_definitions(d, models)
 
         return json.dumps(schema, indent=2)
 
@@ -266,11 +286,12 @@ def generate_json_schema_v2(models: List[Type[BaseModel]]) -> str:
         master_model.model_config["extra"] = "forbid"
         master_model.model_config["json_schema_extra"] = staticmethod(clean_schema)
 
-        schema: dict = master_model.model_json_schema(mode="serialization")
+        schema: dict = master_model.model_json_schema(
+            schema_generator=CustomGenerateJsonSchema, mode="serialization"
+        )
 
         for d in schema.get("$defs", {}).values():
             clean_schema(d)
-            extend_enum_definitions(d, models)
 
         return json.dumps(schema, indent=2)
 
@@ -300,14 +321,19 @@ def generate_typescript_defs(
 
     logger.info("Finding pydantic models...")
 
-    models = extract_pydantic_models(import_module(module))
+    import_result = import_module(module)
+    models = extract_pydantic_models(import_result)
 
     if exclude:
         models = [m for m in models if m.__name__ not in exclude]
 
     logger.info("Generating JSON schema from pydantic models...")
 
-    schema = generate_json_schema_v2(models) if V2 else generate_json_schema_v1(models)
+    if V2:
+        schema = generate_json_schema_v2(models)
+    else:
+        enums = extract_enum_models(import_result)
+        schema = generate_json_schema_v1(models, enums)
 
     schema_dir = mkdtemp()
     schema_file_path = os.path.join(schema_dir, "schema.json")
