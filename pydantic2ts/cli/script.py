@@ -131,7 +131,8 @@ def extract_enum_models(module: ModuleType) -> List[Type[Enum]]:
     module_name = module.__name__
 
     for _, enum in inspect.getmembers(module, is_enum):
-        enums.append(enum)
+        if enum.__module__ != "enum":
+            enums.append(enum)
 
     for _, submodule in inspect.getmembers(
         module, lambda obj: is_submodule(obj, module_name)
