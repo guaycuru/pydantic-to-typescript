@@ -13,7 +13,6 @@ from pathlib import Path
 from tempfile import mkdtemp
 from types import ModuleType
 from typing import Any, Dict, List, Tuple, Type
-
 from uuid import uuid4
 
 from pydantic import VERSION, BaseModel, create_model
@@ -203,18 +202,6 @@ def add_enum_names_v1(model: Type[Enum]) -> None:
                 assert cls[name].value == value
 
     setattr(model, "__modify_schema__", __modify_schema__)
-
-
-def is_matching_enum(prop_type: Any, schema_title: str, schema_enum: list[str]) -> bool:
-    return (
-        isclass(prop_type)
-        and issubclass(prop_type, Enum)
-        and prop_type.__name__ == schema_title
-        and all(
-            value in (member.value for member in prop_type.__members__.values())
-            for value in schema_enum
-        )
-    )
 
 
 if V2:
