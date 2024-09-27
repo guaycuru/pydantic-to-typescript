@@ -6,9 +6,11 @@ from pathlib import Path
 import pytest
 
 from pydantic2ts import generate_typescript_defs
-from pydantic2ts.cli.script import DEBUG, V2, parse_cli_args
+from pydantic2ts.cli.script import V2, parse_cli_args
 
 version = "v2" if V2 else "v1"
+
+DEBUG = os.environ.get("DEBUG", False)
 
 
 def _results_directory() -> str:
