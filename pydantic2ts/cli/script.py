@@ -8,7 +8,6 @@ import shutil
 import sys
 from enum import Enum
 from importlib.util import module_from_spec, spec_from_file_location
-from inspect import isclass
 from pathlib import Path
 from tempfile import mkdtemp
 from types import ModuleType
@@ -40,9 +39,6 @@ if V2:
         pydantic_core = None
 
 logger = logging.getLogger("pydantic2ts")
-
-
-DEBUG = os.environ.get("DEBUG", False)
 
 
 def import_module(path: str) -> ModuleType:
@@ -338,6 +334,8 @@ def generate_typescript_defs(
 
     with open(schema_file_path, "w") as f:
         f.write(schema)
+
+    DEBUG = os.environ.get("DEBUG", False)
 
     if DEBUG:
         debug_schema_file_path = Path(module).parent / "schema_debug.json"
