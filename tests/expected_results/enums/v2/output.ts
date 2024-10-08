@@ -23,13 +23,12 @@ export interface AnimalShelter {
   owner: Dog | null;
   master: Cat;
 }
-export interface LevelTwo {
+export interface LevelTwoData {
   three: EnumLevelThree;
-  some: EnumLevelThree | null;
-  others: EnumLevelThree[];
 }
 export interface LevelOne {
-  two: LevelTwo;
+  data: LevelTwoData;
+  something: number;
 }
 export interface ComplexModelTree {
   one: LevelOne;

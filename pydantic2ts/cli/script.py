@@ -100,7 +100,7 @@ def is_enum(obj) -> bool:
     return inspect.isclass(obj) and issubclass(obj, Enum)
 
 
-def flatten_types(field_type) -> Set[type]:
+def flatten_types(field_type: type) -> Set[type]:
     types = set()
 
     origin = get_origin(field_type)
@@ -123,8 +123,13 @@ def extract_pydantic_models_from_model(
     if model in all_models:
         return []
 
-    for field, field_type in model.__annotations__.items():
-        flattened_types = flatten_types(field_type)
+    if V2:
+        fields = model.model_fields.items()
+    else:
+        fields = model.__fields__.items()
+
+    for field, field_type in fields:
+        flattened_types = flatten_types(field_type.annotation)
         for inner_type in flattened_types:
             if is_concrete_pydantic_model(inner_type):
                 all_models.extend(
@@ -139,7 +144,6 @@ def extract_pydantic_models(module: ModuleType) -> List[Type[BaseModel]]:
     Given a module, return a list of the pydantic models contained within it.
     """
     models = []
-    module_name = module.__name__
 
     for _, model in inspect.getmembers(module, is_concrete_pydantic_model):
         models.extend(extract_pydantic_models_from_model(model, models))

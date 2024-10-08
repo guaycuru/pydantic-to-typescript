@@ -1,7 +1,7 @@
 import os
 import sys
 from enum import Enum
-from typing import List, Optional
+from typing import List, Optional, Literal
 
 from pydantic import BaseModel
 
@@ -11,7 +11,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__))))
 from .schemas.schema_one import ModelOne  # noqa: F401
 from .schemas.schema_two import ModelTwo  # noqa: F401
 from schemas.sub_model import SubModel  # this tests absolute imports
-from schemas.level_one import LevelOne  # this tests absolute imports in multiple layers
+from schemas.complex import LevelOne  # this tests absolute imports in multiple layers
 
 
 class CatBreed(str, Enum):
