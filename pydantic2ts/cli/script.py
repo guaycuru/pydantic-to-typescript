@@ -11,7 +11,7 @@ from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
 from tempfile import mkdtemp
 from types import ModuleType
-from typing import Any, Dict, List, Tuple, Type
+from typing import Any, Dict, List, Tuple, Type, get_origin, get_args, Union, Set
 from uuid import uuid4
 
 from pydantic import VERSION, BaseModel, create_model
@@ -36,7 +36,7 @@ if V2:
     except ImportError:
         GenerateJsonSchema = None
         JsonSchemaValue = None
-        pydantic_core = None
+        core_schema = None
 
 logger = logging.getLogger("pydantic2ts")
 
@@ -75,7 +75,7 @@ def is_submodule(obj, module_name: str) -> bool:
     )
 
 
-def is_concrete_pydantic_model(obj) -> bool:
+def is_concrete_pydantic_model(obj: type) -> bool:
     """
     Return true if an object is a concrete subclass of pydantic's BaseModel.
     'concrete' meaning that it's not a GenericModel.
@@ -100,6 +100,40 @@ def is_enum(obj) -> bool:
     return inspect.isclass(obj) and issubclass(obj, Enum)
 
 
+def flatten_types(field_type) -> Set[type]:
+    types = set()
+
+    origin = get_origin(field_type)
+    if origin is None:
+        types.add(field_type)
+    else:
+        args = get_args(field_type)
+        for arg in args:
+            types.update(flatten_types(arg))
+
+    return types
+
+
+def extract_pydantic_models_from_model(
+    model: Type[BaseModel], all_models: List[Type[BaseModel]]
+) -> List[Type[BaseModel]]:
+    """
+    Given a pydantic model, return a list of the pydantic models contained within it.
+    """
+    if model in all_models:
+        return []
+
+    for field, field_type in model.__annotations__.items():
+        flattened_types = flatten_types(field_type)
+        for inner_type in flattened_types:
+            if is_concrete_pydantic_model(inner_type):
+                all_models.extend(
+                    extract_pydantic_models_from_model(inner_type, all_models)
+                )
+
+    return [model]
+
+
 def extract_pydantic_models(module: ModuleType) -> List[Type[BaseModel]]:
     """
     Given a module, return a list of the pydantic models contained within it.
@@ -108,12 +142,7 @@ def extract_pydantic_models(module: ModuleType) -> List[Type[BaseModel]]:
     module_name = module.__name__
 
     for _, model in inspect.getmembers(module, is_concrete_pydantic_model):
-        models.append(model)
-
-    for _, submodule in inspect.getmembers(
-        module, lambda obj: is_submodule(obj, module_name)
-    ):
-        models.extend(extract_pydantic_models(submodule))
+        models.extend(extract_pydantic_models_from_model(model, models))
 
     return models
 

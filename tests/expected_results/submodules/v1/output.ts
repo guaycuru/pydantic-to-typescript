@@ -5,11 +5,6 @@
 /* Do not modify it by hand - just update the pydantic models and then re-run the script
 */
 
-export interface AnimalShelter {
-  address: string;
-  cats: Cat[];
-  dogs: Dog[];
-}
 export interface Cat {
   name: string;
   age: number;
@@ -20,6 +15,11 @@ export interface Dog {
   name: string;
   age: number;
   breed: DogBreed;
+}
+export interface AnimalShelter {
+  address: string;
+  cats: Cat[];
+  dogs: Dog[];
 }
 
 export const enum CatBreed {
