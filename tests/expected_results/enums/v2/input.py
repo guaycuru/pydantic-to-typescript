@@ -1,10 +1,18 @@
+import os
+import sys
 from enum import Enum
 from typing import List, Optional
 
 from pydantic import BaseModel
 
+# Make absolute imports work
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__))))
+
 from .schemas.schema_one import ModelOne  # noqa: F401
 from .schemas.schema_two import ModelTwo  # noqa: F401
+from schemas.sub_model import (
+    SubModel,
+)  # this tests absolute imports
 
 
 class Cat(BaseModel):
@@ -29,3 +37,7 @@ class AnimalShelter(BaseModel):
 class Standalone(Enum):
     something = "something"
     anything = "anything"
+
+
+class ImportedSubModule(BaseModel):
+    sub: SubModel

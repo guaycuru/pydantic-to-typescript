@@ -21,6 +21,12 @@ export interface Dog {
   name: string;
   age: number;
 }
+export interface ImportedSubModule {
+  sub: SubModel;
+}
+export interface SubModel {
+  bar: Bar;
+}
 export interface ModelOne {
   foo: Foo;
 }
@@ -28,6 +34,10 @@ export interface ModelTwo {
   foo: Foo1;
 }
 
+export const enum Bar {
+  ONE = "one",
+  TWO = "two"
+}
 export const enum Foo {
   ONE_A = "one_a",
   ONE_B = "one_b"
