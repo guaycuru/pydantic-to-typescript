@@ -118,21 +118,16 @@ def extract_pydantic_models(module: ModuleType) -> List[Type[BaseModel]]:
     return models
 
 
-def extract_enum_models(module: ModuleType) -> List[Type[Enum]]:
+def extract_enum_models(models: List[Type[BaseModel]]) -> List[Type[Enum]]:
     """
-    Given a module, return a list of the Enum classes contained within it.
+    Given a list of pydantic models, return a list of the Enum classes used as fields within those models.
     """
     enums = []
-    module_name = module.__name__
 
-    for _, enum in inspect.getmembers(module, is_enum):
-        if enum.__module__ != "enum":
-            enums.append(enum)
-
-    for _, submodule in inspect.getmembers(
-        module, lambda obj: is_submodule(obj, module_name)
-    ):
-        enums.extend(extract_enum_models(submodule))
+    for model in models:
+        for field in model.__fields__.values():
+            if isinstance(field.type_, type) and issubclass(field.type_, Enum):
+                enums.append(field.type_)
 
     return enums
 
@@ -315,8 +310,7 @@ def generate_typescript_defs(
 
     logger.info("Finding pydantic models...")
 
-    import_result = import_module(module)
-    models = extract_pydantic_models(import_result)
+    models = extract_pydantic_models(import_module(module))
 
     if exclude:
         models = [m for m in models if m.__name__ not in exclude]
@@ -326,7 +320,7 @@ def generate_typescript_defs(
     if V2:
         schema = generate_json_schema_v2(models)
     else:
-        enums = extract_enum_models(import_result)
+        enums = extract_enum_models(models)
         schema = generate_json_schema_v1(models, enums)
 
     schema_dir = mkdtemp()
