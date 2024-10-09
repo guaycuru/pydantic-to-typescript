@@ -11,7 +11,7 @@ from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
 from tempfile import mkdtemp
 from types import ModuleType
-from typing import Any, Dict, List, Tuple, Type, get_origin, get_args, Set
+from typing import Any, Dict, List, Tuple, Type, get_origin, get_args, Set, cast
 from uuid import uuid4
 
 from pydantic import VERSION, BaseModel, create_model
@@ -114,6 +114,13 @@ def flatten_types(field_type: type) -> Set[type]:
     return types
 
 
+def get_model_fields(model: Type[BaseModel]) -> Dict[str, Any]:
+    if V2:
+        return model.model_fields
+    else:
+        return model.__fields__
+
+
 def extract_pydantic_models_from_model(
     model: Type[BaseModel], all_models: List[Type[BaseModel]]
 ) -> None:
@@ -125,12 +132,7 @@ def extract_pydantic_models_from_model(
 
     all_models.append(model)
 
-    if V2:
-        fields = model.model_fields.items()
-    else:
-        fields = model.__fields__.items()
-
-    for field, field_type in fields:
+    for field, field_type in get_model_fields(model).items():
         flattened_types = flatten_types(field_type.annotation)
         for inner_type in flattened_types:
             if is_concrete_pydantic_model(inner_type):
@@ -156,9 +158,11 @@ def extract_enum_models(models: List[Type[BaseModel]]) -> List[Type[Enum]]:
     enums = []
 
     for model in models:
-        for field in model.__fields__.values():
-            if isinstance(field.type_, type) and issubclass(field.type_, Enum):
-                enums.append(field.type_)
+        for field_type in get_model_fields(model).values():
+            flattened_types = flatten_types(field_type.annotation)
+            for inner_type in flattened_types:
+                if is_enum(inner_type):
+                    enums.append(cast(Type[Enum], inner_type))
 
     return enums
 
