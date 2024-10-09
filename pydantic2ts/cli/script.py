@@ -11,7 +11,7 @@ from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
 from tempfile import mkdtemp
 from types import ModuleType
-from typing import Any, Dict, List, Tuple, Type, get_origin, get_args, Union, Set
+from typing import Any, Dict, List, Tuple, Type, get_origin, get_args, Set
 from uuid import uuid4
 
 from pydantic import VERSION, BaseModel, create_model
@@ -116,12 +116,14 @@ def flatten_types(field_type: type) -> Set[type]:
 
 def extract_pydantic_models_from_model(
     model: Type[BaseModel], all_models: List[Type[BaseModel]]
-) -> List[Type[BaseModel]]:
+) -> None:
     """
-    Given a pydantic model, return a list of the pydantic models contained within it.
+    Given a pydantic model, add the pydantic models contained within it to all_models.
     """
     if model in all_models:
-        return []
+        return
+
+    all_models.append(model)
 
     if V2:
         fields = model.model_fields.items()
@@ -132,11 +134,7 @@ def extract_pydantic_models_from_model(
         flattened_types = flatten_types(field_type.annotation)
         for inner_type in flattened_types:
             if is_concrete_pydantic_model(inner_type):
-                all_models.extend(
-                    extract_pydantic_models_from_model(inner_type, all_models)
-                )
-
-    return [model]
+                extract_pydantic_models_from_model(inner_type, all_models)
 
 
 def extract_pydantic_models(module: ModuleType) -> List[Type[BaseModel]]:
@@ -146,7 +144,7 @@ def extract_pydantic_models(module: ModuleType) -> List[Type[BaseModel]]:
     models = []
 
     for _, model in inspect.getmembers(module, is_concrete_pydantic_model):
-        models.extend(extract_pydantic_models_from_model(model, models))
+        extract_pydantic_models_from_model(model, models)
 
     return models
 

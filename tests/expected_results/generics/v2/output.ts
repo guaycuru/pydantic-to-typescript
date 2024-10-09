@@ -5,14 +5,14 @@
 /* Do not modify it by hand - just update the pydantic models and then re-run the script
 */
 
-export interface User {
-  name: string;
-  email: string;
-}
 export interface Article {
   author: User;
   content: string;
   published: string;
+}
+export interface User {
+  name: string;
+  email: string;
 }
 export interface Error {
   code: number;

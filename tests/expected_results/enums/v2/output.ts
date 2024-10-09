@@ -5,6 +5,13 @@
 /* Do not modify it by hand - just update the pydantic models and then re-run the script
 */
 
+export interface AnimalShelter {
+  address: string;
+  cats: Cat[];
+  dogs: Dog[];
+  owner: Dog | null;
+  master: Cat;
+}
 export interface Cat {
   name: string;
   age: number;
@@ -16,28 +23,21 @@ export interface Dog {
   age: number;
   breed: DogBreed;
 }
-export interface AnimalShelter {
-  address: string;
-  cats: Cat[];
-  dogs: Dog[];
-  owner: Dog | null;
-  master: Cat;
-}
-export interface LevelTwoData {
-  three: EnumLevelThree;
+export interface ComplexModelTree {
+  one: LevelOne;
 }
 export interface LevelOne {
   data: LevelTwoData;
   something: number;
 }
-export interface ComplexModelTree {
-  one: LevelOne;
-}
-export interface SubModel {
-  bar: Bar;
+export interface LevelTwoData {
+  three: EnumLevelThree;
 }
 export interface ImportedSubModule {
   sub: SubModel;
+}
+export interface SubModel {
+  bar: Bar;
 }
 export interface ModelOne {
   foo: Foo;

@@ -9,12 +9,12 @@ export interface LoginCredentials {
   username: string;
   password: string;
 }
+export interface LoginResponseData {
+  token: string;
+  profile: Profile;
+}
 export interface Profile {
   username: string;
   age: number | null;
   hobbies: string[];
-}
-export interface LoginResponseData {
-  token: string;
-  profile: Profile;
 }
